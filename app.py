@@ -48,7 +48,7 @@ elif page == "Interactive Map":
     st.plotly_chart(fig1)
 
 else:
-    ## Continents
+    ## Continents data
     contlist = df["continent"].unique()
 
     continent = st.selectbox("Select a continent:", contlist)
