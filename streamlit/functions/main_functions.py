@@ -1,13 +1,16 @@
 from datetime import datetime
+from turtle import width
 
 # for data and saves
 import pandas as pd
+import numpy as np
 
 # for app
 import streamlit as st
 
 # for plots
 import plotly.express as px
+from matplotlib import pyplot as plt
 
 
 # **********************************************************
@@ -190,6 +193,46 @@ def show_data(df, continent, area, item, element, year=0):
             st.plotly_chart(fig)
 
 
+# Display choropleth map for ITEM
+def show_choropleth_map(df, item, element, year):
+    to_plot = df[(df["Item"] == item) & (df["Element"] == element)].drop(
+        columns=[
+            "Area Code",
+            "Item Code",
+            "Item",
+            "Element Code",
+            "Element",
+            "Unit",
+        ]
+    )
+    to_plot = to_plot.melt(
+        id_vars=["Continent", "Area"], var_name="Year", value_name="Value"
+    )
+    to_plot["Year"] = to_plot["Year"].apply(lambda x: x[1:])
+    to_plot["Value"] = to_plot["Value"].fillna(0)
+    to_plot = to_plot[to_plot["Year"] == str(year)]
+    fig = px.choropleth(
+        to_plot,
+        locations="Area",
+        locationmode="country names",
+        color="Value",  #  It is a COLUMN of df
+        hover_name="Area",  # Another COLUMN of df
+        color_continuous_scale=px.colors.sequential.Greens,
+        title=f"{element} of {item} in {year}",
+        width=1000,
+        height=580,
+    )
+    st.plotly_chart(fig)
+
+
+# Display imgs
+def display_img(index):
+    empty1, col, empty2 = st.columns([2.5, 20, 2.5])
+    img = st.session_state.imgs[index]
+    col.image(img, use_column_width="always")
+    return
+
+
 # Interactive Map function
 def show_interactive_map(df, item, element):
     to_plot = df[(df["Item"] == item) & (df["Element"] == element)].drop(
@@ -216,7 +259,7 @@ def show_interactive_map(df, item, element):
         size="Value",  # size of circles
         animation_frame="Year",
         projection="natural earth",
-        size_max=30,
+        size_max=45,
         width=1000,
         height=580,
         template="plotly",
@@ -284,13 +327,123 @@ def show_descriptive_scatter(df, item):
         hover_name=countries,
         facet_col=continents,
         log_x=True,
-        size_max=30,
+        size_max=35,
         range_x=[1, max(Area_harvested)],
         range_y=[1, max(Production)],
         width=1000,
         height=580,
         template="plotly",
         title=f"Descriptive evolution ({item})",
+    )
+    st.plotly_chart(fig)
+
+
+def show_most_productive_crops(df, year):
+    tmp_df = df.drop(columns=["Area Code", "Item Code", "Element Code", "Unit"])
+    tmp_df = tmp_df.melt(
+        id_vars=["Continent", "Area", "Item", "Element"],
+        var_name="Year",
+        value_name="Total Worldwide Yield (hg/ha)",
+    )
+    # to display the rank dataframe
+    tmp_df["Year"] = tmp_df["Year"].apply(lambda x: x[1:])
+    tmp_df = tmp_df[(tmp_df["Year"] == str(year)) & (tmp_df["Element"] == "Yield")]
+
+    total_yield = pd.pivot_table(
+        tmp_df, values="Total Worldwide Yield (hg/ha)", columns=["Item"], aggfunc=np.sum
+    ).T
+    total_yield = total_yield.reset_index()
+    total_yield = (
+        total_yield.sort_values(by="Total Worldwide Yield (hg/ha)", ascending=False)
+        .reset_index()
+        .drop(columns=["index"])
+        .rename_axis("RANK")
+        .reset_index()
+    )
+
+    st.dataframe(total_yield)
+
+    # Productivity ranking of Wheat & Barley
+    st.subheader(f"Productivity Ranking of Wheat & Barley in {year}")
+    feat0, val0 = st.columns([3.5, 3.5])
+    feat1, val1 = st.columns([3.5, 3.5])
+    feat0.warning("Wheat:")
+    val0.info(total_yield[total_yield["Item"] == "Wheat"].index[0])
+    feat0.warning("Barley:")
+    val0.info(total_yield[total_yield["Item"] == "Barley"].index[0])
+
+
+def show_productivity_evolution(df):
+    tmp_df = df.drop(columns=["Area Code", "Item Code", "Element Code", "Unit"])
+    tmp_df = tmp_df.melt(
+        id_vars=["Continent", "Area", "Item", "Element"],
+        var_name="Year",
+        value_name="Value",
+    )
+    tmp_df = tmp_df[(tmp_df["Element"] == "Yield")]
+    total_yield = pd.pivot_table(
+        tmp_df, values="Value", index=["Item"], columns=["Year"], aggfunc=np.sum
+    ).T
+
+    top2_to_plot = total_yield.loc[:, ["Wheat", "Barley"]]
+    top5_to_plot = total_yield.loc[
+        :,
+        [
+            "Mushrooms and truffles",
+            "Sugar Crops Primary",
+            "Tomatoes",
+            "Wheat",
+            "Barley",
+        ],
+    ]
+    fig, axs = plt.subplots(2, figsize=(13, 13), dpi=120)
+    axs[0].plot(top2_to_plot)
+    axs[0].legend(["Wheat", "Barley"], loc="upper right")
+    axs[0].set_title("Evolution of yield (Wheat, Barley)")
+    axs[1].plot(top5_to_plot)
+    axs[1].legend(
+        [
+            "Mushrooms and truffles",
+            "Sugar Crops Primary",
+            "Tomatoes",
+            "Wheat",
+            "Barley",
+        ],
+        loc="upper right",
+    )
+    axs[1].set_title("Comparison of productivity over the years")
+    st.pyplot(fig)
+
+
+def show_most_productive_countries(df, year):
+    # to display the piechart
+    item = st.selectbox(
+        label="Select a food type", options=["-"] + list(df["Item"].unique())
+    )
+    tmp_df = df.drop(columns=["Area Code", "Item Code", "Element Code", "Unit"])
+    tmp_df = tmp_df.melt(
+        id_vars=["Continent", "Area", "Item", "Element"],
+        var_name="Year",
+        value_name="Value",
+    )
+    tmp_df["Year"] = tmp_df["Year"].apply(lambda x: x[1:])
+    tmp_df = tmp_df[
+        (tmp_df["Year"] == str(year))
+        & (tmp_df["Element"] == "Production")
+        & (tmp_df["Item"] == item)
+    ]
+    tmp_df = tmp_df.sort_values(by="Value", ascending=False).reset_index().fillna(0)
+    tmp_df.loc[
+        tmp_df["Value"] < (0.03 * tmp_df["Value"].max()),
+        "Area",
+    ] = "Other countries"  # Represent only large countries
+    fig = px.pie(
+        tmp_df,
+        values="Value",
+        names="Area",
+        title=f"Share of production of {item} per country ({year})",
+        width=1000,
+        height=800,
     )
     st.plotly_chart(fig)
 

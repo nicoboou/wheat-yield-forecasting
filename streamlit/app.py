@@ -4,6 +4,7 @@ import sys
 import copy
 from io import open
 from datetime import datetime
+from attr import field
 
 # for data and saves
 import pandas as pd
@@ -22,8 +23,8 @@ st.set_page_config(layout="wide")
 
 # paths
 path_to_repo = os.path.dirname(os.getcwd())
-print(path_to_repo)
 path_to_data = os.path.join(path_to_repo, "data")
+path_to_img = os.path.join(path_to_repo, "img")
 
 
 # custom package
@@ -84,12 +85,21 @@ if "crops_all" not in st.session_state:
     # with open(path_to_model, "rb") as file:
     # model = dill.load(file)
 
+    # load images
+    imgs = []
+    img_files = os.listdir(path_to_img)
+    for img_file in img_files:
+        img = Image.open(os.path.join(path_to_img, img_file))
+        img = np.array(img)
+        imgs.append(img)
+
     ### STORE IN CACHE ###
 
     st.session_state.crops_all = crops_all
     st.session_state.flags_df = flags_df
     st.session_state.pop_df_raw = pop_df_raw
     st.session_state.co2_df = co2_df
+    st.session_state.imgs = imgs
     # st.session_state.n_valid = n_valid
     # st.session_state.model = model
 
@@ -106,7 +116,29 @@ page = st.sidebar.selectbox(
 
 # INTRODUCTION
 if page == "Introduction":
-    pass
+    st.header("Introduction")
+    display_img(2)
+    st.write(
+        "For thousands of years, farming and animal husbandry have been at the heart of human concerns. It began 10,000 years ago with subsistence farming. Then, little by little, a production and trade agriculture was created."
+    )
+    st.write(
+        "Today, information about markets and their organisation, techniques and know-how benefiting from advances in agronomy, high-tech products, instruments and methods developed by the agri-supply industries, are available to the farmer to obtain levels of production never before achieved in human history."
+    )
+    st.write(
+        "However, the margins achieved by agricultural companies in developed countries remain highly variable, depending on fluctuating sales prices and on whether or not the States provide aid, while in other countries the situation of many farmers remains precarious. On the other hand, these recent industrial developments are leading some consumers in rich countries to question the quality of food, its safety and the consequences of modern methods on the environment."
+    )
+    st.markdown(
+        "Even more worrying, **recent geopolitical events** and the **climate crisis** have shifted the main issue **from the quality** of food grown to the **_quantity available_**."
+    )
+    st.subheader("Three main points of interest")
+    feat0, feat1, feat3 = st.columns([2.5, 2.5, 2.5])
+    feat0.warning("Production")
+    feat1.warning("Area harvested")
+    feat3.warning("Yield")
+    st.markdown(" ")
+    st.markdown("**Production:** _quantity of food produced (tonnes)_ ")
+    st.markdown("**Area harvested:** _area of food used for production (hectares)_")
+    st.markdown("**Yield:** _Production/Area harvested (hg/ha)_")
 
 
 # DATASETS
@@ -176,7 +208,7 @@ elif page == "Exploration":
         tmp_df = st.session_state.crops_all
         type_of_exploration = st.sidebar.selectbox(
             label="Select what you want to explore",
-            options=["-"] + ["Detailed Graphs", "Interactive Map"],
+            options=["-"] + ["Overview", "Detailed Graphs", "Evolutive Map"],
         )
         if type_of_exploration == "-":
             st.write(" ")
@@ -191,6 +223,57 @@ elif page == "Exploration":
                 "<h2 style='text-align: center; color: green;'> &#11013;&#65039 Choose what you want to explore! &#129517</h2>",
                 unsafe_allow_html=True,
             )
+
+        if type_of_exploration == "Overview":
+            # - Carte montrant les pays producteurs de blé -vs- non producteurs
+            year = st.slider(
+                "Select a year",
+                min_value=datetime(1961, 1, 1),
+                max_value=datetime(2019, 1, 1),
+                format="YYYY",
+            ).year
+
+            show_choropleth_map(st.session_state.crops_all, "Wheat", "Production", year)
+
+            ## ON TWO DIFFERENT COLUMNS
+            # - 85% de la production de blé provient de 10 pays:
+            # - États Unis
+            # - Russie
+            # - Chine
+            # - Union Européenne
+            # => blé est au cœur d’enjeux stratégiques, géopolitiques et sanitaires
+
+            # TOP 5 most productive types of crops per year
+            ## Somme des rendements pour l'année 2019 pour tous les pays, pour les 165 variétés
+
+            st.markdown(
+                f"**What are the most productive types of crops in **{year}**? Wheat ? Barley ? Something else ? Let's see**"
+            )
+            show_most_productive_crops(st.session_state.crops_all, year)
+
+            st.markdown(
+                f"**In terms of _countries_, what are the ones who produce the most in {year} ?**"
+            )
+            show_most_productive_countries(st.session_state.crops_all, year)
+
+            st.markdown(
+                "**Let's see the evolution in the _'productivity'_ over the years**"
+            )
+            show_productivity_evolution(st.session_state.crops_all)
+
+            st.subheader("CONCLUSION")
+            st.markdown(
+                "**It appears that the yield of Wheat and Barley haven't stopped increasing, however it is nothing compared to the yield of the most productive food crops.**"
+            )
+
+            # TOP 5 most productive countries per year
+
+            # - Situation en 2020:
+            # - France 1re exportateur européen: 13,4M de tonnes vendues à l’étranger
+            # - Russie 1er exportateur mondiale
+            # - Chine 1re producteur mondiale: 130M tonnes/an
+            # - Russie + Ukraine + Kazakhstan: 20% des exportations mondiales
+
         if type_of_exploration == "Detailed Graphs":
             continent = st.selectbox(
                 label="Select a continent",
@@ -253,7 +336,7 @@ elif page == "Exploration":
             else:
                 pass
 
-        elif type_of_exploration == "Interactive Map":
+        elif type_of_exploration == "Evolutive Map":
             # Selectors
             item = st.selectbox(
                 label="Select a food type",
@@ -266,6 +349,7 @@ elif page == "Exploration":
             )
 
             if (item != str("-")) and (element != str("-")):
+                # print_main_info()
                 show_interactive_map(st.session_state.crops_all, item, element)
                 show_descriptive_scatter(st.session_state.crops_all, item)
             else:
