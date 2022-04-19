@@ -98,6 +98,7 @@ if "crops_all" not in st.session_state:
     st.session_state.crops_all = crops_all
     st.session_state.flags_df = flags_df
     st.session_state.pop_df_raw = pop_df_raw
+    st.session_state.emissions_df = emissions_df
     st.session_state.co2_df = co2_df
     st.session_state.imgs = imgs
     # st.session_state.n_valid = n_valid
@@ -157,6 +158,8 @@ elif page == "Datasets":
         st.markdown(
             "Data from the Food and Agriculture Organization of the United Nations (FAO). Achieving food security for all is at the heart of FAO's efforts - ensuring that people have regular access to enough quality food to lead active and healthy lives. Our three main objectives are: the eradication of hunger, food insecurity and malnutrition; the eradication of poverty and the promotion of economic and social progress for all; and the sustainable management and use of natural resources, including land, water, air, climate and genetic resources, for the benefit of present and future generations. Primary crops, fibre crops. Crop statistics are recorded for 173 commodities, covering the following categories: Primary crops, Primary fibre crops, Cereals, Secondary cereals, Citrus, Fruit, Jute and related fibres, Oilcake equivalent, Primary oilseeds, Dry vegetables, Roots and tubers, Green fruits and vegetables and Melons. Data are expressed in terms of area harvested, quantity produced, yield and quantity of seed. The aim is to provide comprehensive coverage of production of all primary crops for all countries and regions of the world."
         )
+        st.subheader("Main Sample")
+        st.dataframe(st.session_state.crops_all)
         st.subheader("Link")
         st.write(
             "Source: Organisation des Nations Unies pour l'alimentation et l'agriculture (FAO)"
@@ -173,6 +176,8 @@ elif page == "Datasets":
         st.markdown(
             "The FAOSTAT domain Emissions Totals summarizes the greenhouse gas (GHG) emissions disseminated in the FAOSTAT Climate Change Emissions domains, generated from agriculture and forest land. They consist of methane (CH4), nitrous oxide (N2O) and carbon dioxide (CO2) emissions from crop and livestock activities, forest management and include land use and land use change processes. Data are computed at Tier 1 of the IPCC Guidelines for National greenhouse gas (GHG) Inventories (IPCC, 1996; 1997; 2000; 2002; 2006; 2014). Estimates are available by country, with global coverage for the period 1961–2019 with projections for 2030 and 2050 for some categories of emissions or 1990–2019 for others. The database is updated annually."
         )
+        st.subheader("Main Sample")
+        st.dataframe(st.session_state.emissions_df)
         st.subheader("Link")
         st.write(
             "Source: Organisation des Nations Unies pour l'alimentation et l'agriculture (FAO)"
@@ -191,6 +196,8 @@ elif page == "Datasets":
         st.write(
             "2. Urban/rural population data refers to the World Urbanization Prospects: The 2018 Revision from the UN Population Division."
         )
+        st.subheader("Main Sample")
+        st.dataframe(st.session_state.pop_df_raw)
         st.subheader("Link")
         st.write("Source: ")
         st.write("")
