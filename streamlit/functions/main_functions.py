@@ -12,6 +12,8 @@ import streamlit as st
 import plotly.express as px
 from matplotlib import pyplot as plt
 
+from statsmodels.tsa.stattools import adfuller
+
 
 # **********************************************************
 # *                      functions                         *
@@ -461,3 +463,65 @@ def show_most_productive_countries(df, year):
 def daterange(start_dt, end_dt):
     for n in range(int(end_dt.year) - int(start_dt.year) + 1):
         yield int(start_dt.year) + n
+
+
+### MACHINE LEARNING
+
+
+def stationarity_test(df, column):
+
+    # Size of plot
+    fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+
+    # Determine rolling statistics
+    movingAverage = df[column].rolling(window=10).mean()
+    movingSTD = df[column].rolling(window=10).std()
+
+    # Plot rolling statistics
+    orig = plt.plot(df[column], color="blue", label="Original")
+    mean = plt.plot(movingAverage, color="red", label="Rolling Mean")
+    std = plt.plot(movingSTD, color="black", label="Rolling Std")
+    plt.legend(loc="best")
+    plt.title("Rolling Mean & Standard Deviation")
+    st.pyplot(fig)
+
+    # Augmented Dickey–Fuller test:
+    st.markdown("_Results of Augmented Dickey Fuller test:_")
+    dick_full_test = adfuller(df[column], autolag="AIC")
+    dick_full_output = pd.Series(
+        dick_full_test[0:4],
+        index=[
+            "Test Statistic",
+            "p-value",
+            "#Lags Used",
+            "Number of Observations Used",
+        ],
+    )
+    for key, value in dick_full_test[4].items():
+        dick_full_output["Critical Value (%s)" % key] = value
+
+    st.dataframe(dick_full_output.to_frame("Results"))
+
+
+def from_pred_to_val(raw_predictions, logscaled_history):
+
+    """ Initial datapoint: the datapoint where you want to initiate your cumulative sum"""
+
+    # raw_predictions need to be model_results.fittedvalues
+    predictions_ARIMA_diff = pd.Series(raw_predictions, copy=True)
+
+    # Convert to cumulative sum
+    predictions_ARIMA_diff_cumsum = predictions_ARIMA_diff.cumsum()
+
+    # logscaled_history = df_logscaled['Total_Wheat_Prod']
+    predictions_ARIMA_log = pd.Series(
+        logscaled_history.iloc[0], index=predictions_ARIMA_diff_cumsum.index
+    )
+
+    predictions_ARIMA_log = predictions_ARIMA_log.add(
+        predictions_ARIMA_diff_cumsum, fill_value=0
+    )
+
+    # Inverse of log is exp.
+    predictions_ARIMA = np.exp(predictions_ARIMA_log)
+    return predictions_ARIMA
