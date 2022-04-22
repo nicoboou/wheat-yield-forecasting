@@ -185,6 +185,13 @@ if page == "Introduction":
     st.markdown(
         "Even more worrying, **recent geopolitical events** and the **climate crisis** have shifted the main issue **from the quality** of food grown to the **_quantity available_**."
     )
+    st.subheader("Goals")
+    st.markdown(
+        "- **Worldwide Wheat Production (Univariate)**: based *only* on past datapoints, try to project futur values"
+    )
+    st.markdown(
+        "- **USA Wheat Yield (Multivariate)**: using **external features** (such as **population** data & **climate change** data), try to forecast future values of the time-series."
+    )
     st.subheader("Three main points of interest")
     feat0, feat1, feat3 = st.columns([2.5, 2.5, 2.5])
     feat0.warning("Production")
@@ -775,7 +782,7 @@ elif page == "Predictions":
         ## **Exponential Weighted Moving Average (EWMA)**
         st.markdown("**Exponential Weighted Moving Average (EWMA)**")
         st.markdown(
-            "Compared to simple moving averages, EMAs give greater weight to recent (more relevant) data. Indeed in a standard moving average, the oldest price in a fixed series is dropped. By contrast, all prices in a chart influence an exponential moving average: older prices gradually diminish in significance, this time **exponentially** (in contrast with Simple WMA)."
+            "Compared to simple moving averages, EMAs give greater weight to recent (more relevant) data. Indeed in a standard moving average, the oldest price in a fixed series is dropped. By contrast, all prices in a chart influence an exponential moving average: **older prices gradually diminish in significance, this time *exponentially* (in contrast with Simple WMA)***."
         )
         st.markdown(
             r"""The EMA for a series ${\displaystyle T}$ may be calculated recursively:"""
