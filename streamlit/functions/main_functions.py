@@ -13,6 +13,8 @@ import plotly.express as px
 from matplotlib import pyplot as plt
 
 from statsmodels.tsa.stattools import adfuller
+import math
+from sklearn.model_selection import train_test_split
 
 
 # **********************************************************
@@ -525,3 +527,88 @@ def from_pred_to_val(raw_predictions, logscaled_history):
     # Inverse of log is exp.
     predictions_ARIMA = np.exp(predictions_ARIMA_log)
     return predictions_ARIMA
+
+
+def from_series_to_supervised(df):
+    # Import our df
+    wheat_prod = df["Total_Wheat_Prod"].values
+
+    # We create a new df by using the max_length preceding years as features for our target_year
+    full_years = []
+    step = 1
+    max_len = 5  # Here we are using the XX preceding years
+
+    for idx in range(0, len(wheat_prod) - max_len, step):
+        full_years.append(wheat_prod[idx : idx + max_len + 1])
+
+    columns_names = [f"Value_Year -{max_len - idx}" for idx in range(0, max_len)]
+    columns_names.append("Target_Year")
+
+    expanded_wheat_prod = pd.DataFrame(
+        full_years, columns=columns_names, index=df.index[max_len:]
+    )
+    # Train & test sets created
+    X = expanded_wheat_prod.iloc[:, :-1]
+    y = expanded_wheat_prod.iloc[:, -1]
+
+    X_train, X_valid, y_train, y_valid = train_test_split(
+        X, y, test_size=0.3, random_state=42
+    )
+
+    st.dataframe(expanded_wheat_prod.tail())
+    st.markdown("*Shape of train & test dataset*")
+    st.write(X_train.shape, X_valid.shape)
+    st.write(y_train.shape, y_valid.shape)
+    return expanded_wheat_prod, X, y, X_train, X_valid, y_train, y_valid
+
+
+def print_score(m, X_train, y_train, X_valid, y_valid):
+    st.write("RMSE on train set: {:.4f}".format(rmse(m.predict(X_train), y_train)))
+    st.write("RMSE on valid set: {:.4f}".format(rmse(m.predict(X_valid), y_valid)))
+    st.write("R^2 on train set: {:.4f}".format(m.score(X_train, y_train)))
+    st.write("R^2 on valid set: {:.4f}".format(m.score(X_valid, y_valid)))
+    if hasattr(m, "oob_score_"):
+        st.write("R^2 on oob set: {:.4f}".format(m.oob_score_))
+    return
+
+
+def rmse(y_gold, y_pred):
+    return math.sqrt(((y_gold - y_pred) ** 2).mean())
+
+
+def rf_forecast(model, df, steps_to_forecast=10):
+    new_df = df.copy()
+    for i in range(1, steps_to_forecast):
+        previous_years = new_df.iloc[len(new_df.index) - 1, 1:].values
+        predicted_year = model.predict([previous_years])
+        full_years = np.append(previous_years, predicted_year)
+        new_df.loc[new_df.index.shift(1, freq="AS")[-1]] = full_years
+    return new_df
+
+
+def features_importances(df, estimator):
+    listed_importance = {}
+    for index, importance in enumerate(estimator.feature_importances_):
+        feature_name = df.columns[index]
+        listed_importance[feature_name] = importance
+    sorted_importance = dict(
+        sorted(listed_importance.items(), key=lambda item: item[1], reverse=True)
+    )
+    return sorted_importance
+
+
+def plot_forecast_scenarios(
+    df, temperature_scenario, precipitations_scenario, pop_scenario
+):
+    to_plot = df[
+        (df["Precipitations Type"] == precipitations_scenario)
+        & (df["Temperature Type"] == temperature_scenario)
+        & (df["Variant"] == pop_scenario)
+    ]
+    plt.plot(
+        to_plot.index,
+        to_plot["Total_Wheat_YIELD"],
+        ls="--",
+        lw="2",
+        label=f"Forecasted ({temperature_scenario}/{precipitations_scenario}/{pop_scenario})",
+    )

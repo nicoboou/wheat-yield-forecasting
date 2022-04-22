@@ -233,3 +233,21 @@ countries = [
     "Zambia",
     "Zimbabwe",
 ]
+
+code_block_rf = """#We create a new df by using the max_length preceding years as features for our target_year
+full_years = []
+step = 1
+max_len = 5 #Here we are using the XX preceding years
+
+for idx in range(0, len(wheat_prod) - max_len, step):
+    full_years.append(wheat_prod[idx : idx + max_len + 1 ])
+
+columns_names = [f'Value_Year -{max_len - idx}' for idx in range(0,max_len)]
+columns_names.append('Target_Year')
+
+expanded_wheat_prod = pd.DataFrame(full_years,columns=columns_names,index=wheat_prod_ts.index[max_len:])
+expanded_wheat_prod.tail()"""
+
+code_block_pop_df = """usa_pop['Time'] = usa_pop['Time'].apply(lambda x: "01/01/" + str(x))
+usa_pop = usa_pop.set_index('Time')
+usa_pop.index = pd.to_datetime(usa_pop.index)"""

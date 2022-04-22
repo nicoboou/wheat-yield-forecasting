@@ -23,6 +23,10 @@ import streamlit as st
 
 # for plots
 import plotly.express as px
+import seaborn as sns
+
+# constants
+from constants import *
 
 # config
 st.set_page_config(layout="wide")
@@ -99,10 +103,36 @@ if "crops_all" not in st.session_state:
 
     ### LOAD MODELS ###
 
-    # 1. ARIMA Model
+    # 1. ARIMA Model (UNIVARIATE)
     path_to_arima_model = os.path.join(path_to_repo, "models", "arima.pickle")
     with open(path_to_arima_model, "rb") as file:
         arima_model = dill.load(file)
+
+    # 2. Random Forest (UNIVARIATE)
+    path_to_rf_uni = os.path.join(path_to_repo, "models", "RandomForest_Univariate.pkl")
+    with open(path_to_rf_uni, "rb") as file:
+        rf_uni = dill.load(file)
+
+    # 3. Linear Regression (UNIVARIATE)
+    path_to_lr_uni = os.path.join(
+        path_to_repo, "models", "LinearRegression_Univariate.pkl"
+    )
+    with open(path_to_lr_uni, "rb") as file:
+        lr_uni = dill.load(file)
+
+    # 4. Random Forest (MULTIVARIATE)
+    path_to_rf_multi = os.path.join(
+        path_to_repo, "models", "RandomForest_Multivariate.pkl"
+    )
+    with open(path_to_rf_multi, "rb") as file:
+        rf_multi = dill.load(file)
+
+    # 5. Linear Regression (UNIVARIATE)
+    path_to_lr_multi = os.path.join(
+        path_to_repo, "models", "LinearRegression_Multivariate.pkl"
+    )
+    with open(path_to_lr_multi, "rb") as file:
+        lr_multi = dill.load(file)
 
     ### LOAD IMAGES ###
     imgs = []
@@ -122,9 +152,12 @@ if "crops_all" not in st.session_state:
     st.session_state.usa_pop_estimations = usa_pop_estimations
     st.session_state.climate_usa = climate_usa
     st.session_state.imgs = imgs
-    # st.session_state.n_valid = n_valid
-    st.session_state.arima_model = arima_model
 
+    st.session_state.arima_model = arima_model
+    st.session_state.rf_uni = rf_uni
+    st.session_state.lr_uni = lr_uni
+    st.session_state.rf_multi = rf_multi
+    st.session_state.lr_multi = lr_multi
 
 # **********************************************************
 #                     main script                         *
@@ -189,7 +222,9 @@ elif page == "Datasets":
         st.write(
             "Source: Organisation des Nations Unies pour l'alimentation et l'agriculture (FAO)"
         )
-        st.write("")
+        st.write(
+            "https://github.com/nicoboou/ml_eml/tree/main/data/agriculture-crop-production"
+        )
 
     elif dataset == "USA Climate":
         st.header("USA Climate Dataset")
@@ -537,7 +572,6 @@ elif page == "Exploration":
         ).year
 
         # Choropleth map
-        from constants import countries
 
         to_plot2 = st.session_state.pop_df_raw[
             (st.session_state.pop_df_raw.index == str(year))
@@ -929,7 +963,368 @@ elif page == "Predictions":
         axs[1].plot(
             forecast_ARIMA.loc["2020":], color="green", ls="--", lw=2, label="Forecast"
         )
-        # axs[1].fill_between(predict_dy_ci.index,predict_dy_ci['upper Total_Wheat_Prod'], predict_dy_ci['lower Total_Wheat_Prod'],alpha=0.5,label='95% confidence interval')
         axs[1].set_title("Forecast")
         plt.legend()
         st.pyplot(fig)
+
+        ### RANDOM FOREST (UNIVARIATE)
+        st.markdown("### Random Forests (Univariate Machine Learning method)")
+        st.markdown(
+            "Still using ***univariate*** method, Machine Learning has proven to be really powerful in time-series analyis. What I wanted to experiment is if such _new ML methods_ are **more powerful** than _traditional statistical_ ones ?"
+        )
+        st.markdown("**Transform our _time-series_ to a _supervised_ dataset**")
+        st.markdown(
+            "Such problem need that we transform our time-series into a _'supervised_'dataset. For that purpose, we need to build a new dataframe & input as features the ${n-1}$ years of the ```target_variable```we want to predict."
+        )
+        st.markdown("")
+
+        st.code(code_block_rf, language="python")
+        (
+            expanded_wheat_prod,
+            X,
+            y,
+            X_train,
+            X_valid,
+            y_train,
+            y_valid,
+        ) = from_series_to_supervised(wheat_prod_ts)
+        st.write(X_train.shape)
+        st.markdown(
+            "Here, we are using the ***5*** preceding years to build our new supervised df."
+        )
+        st.markdown("**Model Training & Results**")
+        st.markdown(
+            "After splitting our new dataset into ```train```and ```test```sets, I performed some ***cross validation*** using **GridSearchCV** and picked the best RandomForestRegressor among many. Here are the results:"
+        )
+        print_score(st.session_state.rf_uni, X_train, y_train, X_valid, y_valid)
+
+        st.markdown("**Predictions**")
+        y_pred = st.session_state.rf_uni.predict(X)
+        st.dataframe(pd.Series(y_pred).to_frame("Predictions (RF Univariate)"))
+
+        # Plot
+        fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+        plt.plot(wheat_prod_ts, ls=":", label="History")
+        plt.plot(wheat_prod_ts.index[5:], y_pred, "r", ls="--", label="Predictions")
+        plt.title("Predictions with Random Forests")
+        plt.legend()
+        st.pyplot(fig)
+
+        st.markdown("**Forecast**")
+        rf_uni_forecasted = rf_forecast(
+            st.session_state.rf_uni, expanded_wheat_prod, 10
+        )
+        st.dataframe(rf_uni_forecasted.tail(15))
+
+        # Plot
+        fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+        plt.plot(wheat_prod_ts, ls=":", label="History")
+        plt.plot(wheat_prod_ts.index[5:], y_pred, "r", ls="--", label="Predictions")
+        plt.plot(
+            rf_uni_forecasted["Target_Year"]["2019":], "s", ls=":", label="Forecasts"
+        )
+        plt.title("Predictions with Random Forests")
+        plt.legend()
+        st.pyplot(fig)
+        st.markdown(
+            "**CONCLUSION: It appears that our RandomForest Regressor has some troubles to extrapolate and forecast beyond the training data time range.**"
+        )
+
+        ### LINEAR REGRESSION (UNIVARIATE)
+        st.markdown(
+            "In order to ***extrapolate*** more, one algorithm could be very well fitted for the job: **linear regression**\ Let's have a look at the metrics when we train a simple LinearRegression algorithm:"
+        )
+        print_score(st.session_state.lr_uni, X_train, y_train, X_valid, y_valid)
+        y_pred = st.session_state.lr_uni.predict(X)
+        linear_forecast = rf_forecast(st.session_state.lr_uni, expanded_wheat_prod, 10)
+        # Plot
+        fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+        plt.plot(wheat_prod_ts, ls=":", label="History")
+        plt.plot(wheat_prod_ts.index[5:], y_pred, "r", ls="--", label="Predictions")
+        plt.plot(
+            linear_forecast["Target_Year"]["2019":], "v", ls=":", label="Forecasts"
+        )
+        plt.title("Predictions with Linear Regression")
+        plt.legend()
+        st.pyplot(fig)
+
+    elif prediction == "USA Wheat Yield (Multivariate)":
+        st.markdown(
+            "## II. Time-series Analysis #2: USA Wheat Yield Forecast using Earth Temp & Pop data"
+        )
+        st.markdown(
+            "In the first experiment, I used only the ***univariate*** methodology, relying on past data only. Let's now see how the **multivariate** methods come into play for time-series forecasting."
+        )
+        st.markdown(
+            "Using _multivariate_ methodology implies that other features, ***external*** to our _target_ variable, are used. I chose to rely on **Climate Metrics** & **Population statistics** to predict the Wheat Yield in the US."
+        )
+        st.markdown(
+            "**Let's consolidate the data to get only the total USA population per year since 1950**"
+        )
+        st.markdown(
+            "**_Note_**:In order to manipulate dates in a simpler manner, let's first tweak our 'Time' column in order to be able to put it in a DateTimeIndex format"
+        )
+        st.code(code_block_pop_df, language="python")
+        st.dataframe(st.session_state.usa_pop)
+
+        st.markdown(
+            "We can now consolidate our 3 dataframes into 1: ```pop.csv```, ```crops_all.csv``` & ```climate_usa.csv```"
+        )
+
+        # Wheat Yield dataset
+        wheat_yield_ts = st.session_state.crops_all[
+            (st.session_state.crops_all["Item"] == "Wheat")
+            & (st.session_state.crops_all["Element"] == "Yield")
+        ].drop(
+            columns=[
+                "Area Code",
+                "Item Code",
+                "Item",
+                "Element Code",
+                "Unit",
+            ]
+        )
+
+        # let's deflate our df to put all our "Year" columns in a single column
+        wheat_yield_ts = wheat_yield_ts.melt(
+            id_vars=["Continent", "Area", "Element"],
+            var_name="Year",
+            value_name="Value",
+        )
+
+        # Some small slicing to get the Year
+        wheat_yield_ts["Year"] = wheat_yield_ts["Year"].apply(lambda x: x[1:])
+
+        # Fill NaN values with 0 to be able to plot
+        wheat_yield_ts["Value"] = wheat_yield_ts["Value"].fillna(0)
+        wheat_yield_ts = pd.pivot_table(
+            wheat_yield_ts, values="Value", index=["Year"], aggfunc=np.sum
+        )
+        wheat_yield_ts.index = pd.to_datetime(wheat_yield_ts.index)
+        wheat_yield_ts = wheat_yield_ts.rename(columns={"Value": "Total_Wheat_YIELD"})
+        usa_yield = wheat_yield_ts.merge(
+            st.session_state.usa_pop,
+            how="right",
+            left_index=True,
+            right_index=True,
+            suffixes=(False, False),
+        )
+        usa_yield = usa_yield.merge(
+            st.session_state.climate_usa, how="right", left_index=True, right_index=True
+        )
+        st.dataframe(usa_yield.tail())
+
+        # Dataset Prep
+        st.markdown("**Dataset Transform**")
+        usa_yield = usa_yield.drop(columns=["LocID", "Location", "VarID", "MidPeriod"])
+        usa_yield = usa_yield.melt(
+            id_vars=[
+                "Total_Wheat_YIELD",
+                "PopMale",
+                "PopFemale",
+                "PopTotal",
+                "PopDensity",
+                "Variant",
+                "Precipitations (historic)",
+                "Precipitations (RCP2.6)",
+                "Precipitations (RCP6)",
+                "Precipitations (RCP8.5)",
+            ],
+            var_name="Temperature Type",
+            value_name="Temperature (°C)",
+            ignore_index=False,
+        )
+        usa_yield = usa_yield.melt(
+            id_vars=[
+                "Total_Wheat_YIELD",
+                "PopMale",
+                "PopFemale",
+                "PopTotal",
+                "PopDensity",
+                "Variant",
+                "Temperature Type",
+                "Temperature (°C)",
+            ],
+            var_name="Precipitations Type",
+            value_name="Precipitations (mm/y)",
+            ignore_index=False,
+        )
+
+        # Historical data
+        st.markdown("*Historical data*")
+        st.code(
+            """usa_yield_hist=usa_yield[(usa_yield["Temperature Type"] == "Temperature (historic)")& (usa_yield["Precipitations Type"] == "Precipitations (historic)")].loc["1961":"2019"]"""
+        )
+        usa_yield_hist = usa_yield[
+            (usa_yield["Temperature Type"] == "Temperature (historic)")
+            & (usa_yield["Precipitations Type"] == "Precipitations (historic)")
+        ].loc["1961":"2019"]
+
+        # Data we will use to forecast USA Wheat Yield
+        st.markdown("*Data we will use to forecast USA Wheat Yield*")
+        st.code(
+            """usa_yield_preds=usa_yield[(usa_yield["Temperature Type"] != "Temperature (historic)") & (usa_yield["Precipitations Type"] != "Precipitations (historic)")].loc["2020":]"""
+        )
+        usa_yield_preds = usa_yield[
+            (usa_yield["Temperature Type"] != "Temperature (historic)")
+            & (usa_yield["Precipitations Type"] != "Precipitations (historic)")
+        ].loc["2020":]
+
+        ### RANDOM FOREST (MULTIVARIATE)
+
+        st.markdown("### Random Forest (Multivariate")
+        # Create our train_test_plit & variables
+        predictors = usa_yield_hist.drop(
+            columns=[
+                "Total_Wheat_YIELD",
+                "Variant",
+                "Temperature Type",
+                "Precipitations Type",
+            ]
+        )
+        target = usa_yield_hist["Total_Wheat_YIELD"]
+        X_train, X_valid, y_train, y_valid = train_test_split(
+            predictors, target, test_size=0.3, random_state=42
+        )
+        st.markdown("*Shape of our train & test sets*")
+        st.write(X_train.shape, X_valid.shape)
+        st.write(y_train.shape, y_valid.shape)
+
+        st.markdown(
+            "**Metrics of our RandomForestRegressor using *multivariate* method:**"
+        )
+        print_score(st.session_state.rf_multi, X_train, y_train, X_valid, y_valid)
+        st.info("*This model is doing **very well** !*")
+        st.markdown(
+            "**And hat are the most _'important'_ features in our model ? What weighted most in its decision ?**"
+        )
+        features_importance = features_importances(X_train, st.session_state.rf_multi)
+        features_importance = pd.DataFrame.from_dict(
+            features_importance, orient="index"
+        )
+        st.dataframe(features_importance)
+        st.info(
+            "We clearly see that the metrics related to *Population* are the **most influential ones** on our model"
+        )
+
+        full_pred = st.session_state.rf_multi.predict(predictors)
+
+        fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+        plt.plot(usa_yield_hist["Total_Wheat_YIELD"], label="Historical")
+        plt.plot(usa_yield_hist.index, full_pred, label="Predicted")
+        plt.title("USA Wheat Yield")
+        plt.legend()
+        st.pyplot(fig)
+        st.info(
+            "**Prediction** on *historical data* appears very **well fitted** when plotted"
+        )
+
+        st.markdown("**Forecasting future datapoints**")
+        predictors_to_forecast = usa_yield_preds.drop(
+            columns=[
+                "Total_Wheat_YIELD",
+                "Variant",
+                "Temperature Type",
+                "Precipitations Type",
+            ]
+        )
+        target_to_forecast = usa_yield_preds["Total_Wheat_YIELD"]
+        forecast_multi_rf = st.session_state.rf_multi.predict(predictors_to_forecast)
+        usa_yield_preds["Total_Wheat_YIELD"] = forecast_multi_rf
+        st.dataframe(usa_yield_preds["Total_Wheat_YIELD"])
+        options_temp = st.selectbox(
+            "Temperature scenarios",
+            usa_yield_preds["Temperature Type"].unique(),
+        )
+        options_precipitations = st.selectbox(
+            "Precipitations scenarios",
+            usa_yield_preds["Precipitations Type"].unique(),
+        )
+        options_pop = st.selectbox(
+            "Population scenarios",
+            usa_yield_preds["Variant"].unique(),
+        )
+
+        fig, axs = plt.subplots(1, figsize=(15, 7), dpi=120)
+        plt.plot(usa_yield_hist["Total_Wheat_YIELD"], label="Historical")
+        plt.plot(usa_yield_hist.index, full_pred, label="Predicted")
+        plot_forecast_scenarios(
+            usa_yield_preds, options_temp, options_precipitations, options_pop
+        )
+        plt.title("USA Wheat Yield Forecast (Random Forest Multivariate)")
+        plt.legend()
+        st.pyplot(fig)
+        st.markdown("**CONCLUSIONS:**")
+        st.markdown(
+            "-  Even using multivariate method for time-series analysis, _RandomForests_ appears to **struggle with extropolation/forecasting**"
+        )
+        st.markdown(
+            "- Nevertheless though, some specific scenarios seem to influence the model enough to make the trend curb. These scenarios mostly depend on **Population** forecasting."
+        )
+
+        ### LINEAR REGRESSION (MULTIVARIATE)
+        st.markdown("### Linear Regression (Multivariate")
+        st.markdown(
+            "**What are the result metrics for a Linear Regression model trained using multiple **external** features ?**"
+        )
+        forecast_multi_lr = st.session_state.lr_multi.predict(predictors_to_forecast)
+        usa_yield_preds["Total_Wheat_YIELD"] = forecast_multi_lr
+        print_score(st.session_state.lr_multi, X_train, y_train, X_valid, y_valid)
+        st.markdown(
+            "Our $RMSE$ and $R^2$ appear to be as performant as the ones we got from our multivariate RF regressor"
+        )
+        options_temp2 = st.selectbox(
+            "Temperature scenarios",
+            np.sort(usa_yield_preds["Temperature Type"].unique())[::-1],
+        )
+        options_precipitations2 = st.selectbox(
+            "Precipitations scenarios",
+            np.sort(usa_yield_preds["Precipitations Type"].unique())[::-1],
+        )
+        options_pop2 = st.selectbox(
+            "Population scenarios",
+            np.sort(usa_yield_preds["Variant"].unique())[::-1],
+        )
+        # Plot
+        fig, axs = plt.subplots(1, figsize=(17, 8), dpi=200)
+        plt.plot(usa_yield_hist["Total_Wheat_YIELD"], label="Historical")
+        plt.plot(usa_yield_hist.index, full_pred, label="Predicted")
+        plot_forecast_scenarios(
+            usa_yield_preds,
+            "Temperature (RCP2.6)",
+            "Precipitations (RCP2.6)",
+            "Zero migration",
+        )
+        plot_forecast_scenarios(
+            usa_yield_preds, "Temperature (RCP8.5)", "Precipitations (RCP8.5)", "Low"
+        )
+        plot_forecast_scenarios(
+            usa_yield_preds, "Temperature (RCP2.6)", "Precipitations (RCP8.5)", "High"
+        )
+        plot_forecast_scenarios(
+            usa_yield_preds,
+            options_temp2,
+            options_precipitations2,
+            options_pop2,
+        )
+        plt.title("USA Wheat Yield Forecast (Linear Regression Multivariate)")
+        plt.legend()
+        st.pyplot(fig)
+
+        ### CONCLUSION
+        st.markdown("### Conclusion")
+        st.markdown(
+            "Of course these predictions are to be put into perspective and context. Climate change, and more recently Ukrainian war dismantle such algorithms. Such hazards, natural and man-made disasters lead to huge changes in food production. And it is undermining our ability to predict crop yields. Even the best models break down in this context."
+        )
+        st.markdown(
+            "1. **Univariate analysis** is ***less powerful*** than **multivariate analysis** for our dataset"
+        )
+        st.markdown(
+            "2. **Machine Learning** techniques (RandomForest, LR) appear ***more precise*** & ***less time-sensitive*** than **traditional statistical methods** (e.g. ARIMA here)**"
+        )
+        st.markdown(
+            "3. In terms of ***prediction*** (predicting historical data), RandomForests are better."
+        )
+        st.markdown(
+            "4. But in terms of ***forecasting*** (projecting the future), linear regression is **more adapted** since RandomForest isn't capable to ***extropolate*** well (i.e. predict outside original time range from training data)"
+        )
