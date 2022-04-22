@@ -7,7 +7,6 @@ argon2-cffi==21.3.0
 argon2-cffi-bindings==21.2.0
 astor==0.8.1
 asttokens==2.0.5
-atk-1.0==2.36.0
 attrs==21.4.0
 backcall==0.2.0
 base58==2.1.1
