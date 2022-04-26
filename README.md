@@ -1,10 +1,23 @@
-# ml_eml
+# Time-Series Forecasting
 
-This repo is intended to hold the code for Machine Learning project in the context of emlyon's course.
+Time-series Forecasting using different methods:
+
+- Univariate method:
+  - ARIMA Model (Statistical analysis)
+  - Random Forest (Machine Learning)
+  - Linear Regression (Machine Learning)
+- Multivariate method:
+  - Random Forest (Machine Learning)
+  - Linear Regression (Machine Learning)
+
+## TLDR
+
+Streamlit app:
+Jupyter Notebook: ./notebook/
 
 ## Project Outline
 
-As part of a student project, we are given carte blanche in 2 months to :
+As part of a student project, we were given a white card to :
 
 - find a reliable and complete dataset
 - clean this dataset and do the necessary data preprocessing to be able to do machine learning
@@ -29,17 +42,17 @@ Primary crops, fibre crops. Crop statistics are recorded for 173 commodities, co
 
 _Source_ : Organisation des Nations Unies pour l'alimentation et l'agriculture (FAO)
 
-## Project Ideas
+## Notebook Structure
 
-Several ideas might pop up looking at this dataset, for example:
-
-- C02 emissions of crops using regression
-- Clustering on CO2 crop emissioners
-- Crop yields forecasting through time-series analysis
-
-## Structure (_To be confirmed_)
+You will find the following structure in the .ipynb file:
 
 1. Data preprocessing
 2. Exploratory Data Analysis
-3. Regression / Classification Problems
-4. Time-series Analysis & Forecasting
+3. Time-series Analysis & Forecasting
+   - Univariate method
+   - Multivariate method
+
+## Requirements
+
+The file `requirements.txt`will allow you to create your dedicated `conda env`without any missing dependency.
+Just type `conda create --name <env_name> --file requirements.txt` in your terminal
