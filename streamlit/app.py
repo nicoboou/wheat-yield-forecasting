@@ -103,9 +103,7 @@ if "crops_all" not in st.session_state:
     ### LOAD MODELS ###
 
     # 1. ARIMA Model (UNIVARIATE)
-    path_to_arima_model = os.path.join(
-        os.path.dirname(os.getcwd()), "models", "arima.pickle"
-    )
+    path_to_arima_model = os.path.join(os.getcwd(), "model", "arima.pickle")
     with open(path_to_arima_model, "rb") as file:
         arima_model = dill.load(file)
 
