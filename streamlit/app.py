@@ -34,10 +34,10 @@ st.set_page_config(layout="wide")
 # paths
 
 # STREAMLIT ONLINE (DEPLOYED)
-path_to_repo = os.getcwd()
+# path_to_repo = os.getcwd()
 
 # STREAMLIT LOCAL
-# path_to_repo = os.path.dirname(os.getcwd())
+path_to_repo = os.path.dirname(os.getcwd())
 
 path_to_data = os.path.join(path_to_repo, "data")
 path_to_img = os.path.join(path_to_repo, "img")
