@@ -1,9 +1,10 @@
 # This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
 # platform: osx-64
+pip>=22.0.4
 dill>=0.3.4
 matplotlib>=3.5.1
-numpy>=1.22.3
+numpy>=1.21.6
 pandas>=1.4.1
 pickleshare>=0.7.5
 pillow>=9.0.1
