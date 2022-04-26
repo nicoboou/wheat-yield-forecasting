@@ -112,8 +112,7 @@ if "crops_all" not in st.session_state:
     # 1. ARIMA Model (UNIVARIATE)
     path_to_arima_model = os.path.join(path_to_repo, "models", "arima.pickle")
     with open(path_to_arima_model, "rb") as file:
-        arima_model = pickle.load(file)
-        # arima_model = dill.load(file)
+        arima_model = dill.load(file)
 
     # 2. Random Forest (UNIVARIATE)
     path_to_rf_uni = os.path.join(path_to_repo, "models", "RandomForest_Univariate.pkl")
