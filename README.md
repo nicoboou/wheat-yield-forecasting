@@ -12,8 +12,8 @@ Time-series Forecasting using different methods:
 
 ## TLDR
 
-Streamlit app:
-Jupyter Notebook: ./notebook/
+- Streamlit app: install `requirements.txt` and then `streamlit run app.py`
+- Jupyter Notebook: https://github.com/nicoboou/time-series-forecasting/blob/main/notebook/Crops%20Yield%20Notebook.ipynb
 
 ## Project Outline
 
