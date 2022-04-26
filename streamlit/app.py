@@ -32,6 +32,7 @@ st.set_page_config(layout="wide")
 
 # paths
 path_to_repo = os.path.dirname(os.getcwd())
+print(path_to_repo)
 path_to_data = os.path.join(path_to_repo, "data")
 path_to_img = os.path.join(path_to_repo, "img")
 
