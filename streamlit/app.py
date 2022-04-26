@@ -23,7 +23,6 @@ import streamlit as st
 
 # for plots
 import plotly.express as px
-import seaborn as sns
 
 # constants
 from constants import *
