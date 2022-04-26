@@ -1,6 +1,3 @@
-from datetime import datetime
-from turtle import width
-
 # for data and saves
 import pandas as pd
 import numpy as np
