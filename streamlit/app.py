@@ -9,6 +9,7 @@ from attr import field
 # for data and saves
 import pandas as pd
 import numpy as np
+import pickle5 as pickle
 import dill
 from PIL import Image  # pillow package
 
@@ -31,7 +32,13 @@ from constants import *
 st.set_page_config(layout="wide")
 
 # paths
-path_to_repo = os.path.dirname(os.getcwd())
+
+# STREAMLIT ONLINE (DEPLOYED)
+path_to_repo = os.getcwd()
+
+# STREAMLIT LOCAL
+# path_to_repo = os.path.dirname(os.getcwd())
+
 path_to_data = os.path.join(path_to_repo, "data")
 path_to_img = os.path.join(path_to_repo, "img")
 
@@ -103,9 +110,10 @@ if "crops_all" not in st.session_state:
     ### LOAD MODELS ###
 
     # 1. ARIMA Model (UNIVARIATE)
-    path_to_arima_model = os.path.join(os.getcwd(), "models", "arima.pickle")
+    path_to_arima_model = os.path.join(path_to_repo, "models", "arima.pickle")
     with open(path_to_arima_model, "rb") as file:
-        arima_model = dill.load(file)
+        arima_model = pickle.load(file)
+        # arima_model = dill.load(file)
 
     # 2. Random Forest (UNIVARIATE)
     path_to_rf_uni = os.path.join(path_to_repo, "models", "RandomForest_Univariate.pkl")
