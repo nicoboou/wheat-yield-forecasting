@@ -1,4 +1,20 @@
-# Time-Series Forecasting
+# Wheat Yield & Production Forecasting using Time-Series analysis
+
+For thousands of years, farming and animal husbandry have been at the heart of human concerns. It began 10,000 years ago with subsistence farming. Then, little by little, a production and trade agriculture was created.
+
+Today, information about markets and their organisation, techniques and know-how benefiting from advances in agronomy, high-tech products, instruments and methods developed by the agri-supply industries, are available to the farmer to obtain levels of production never before achieved in human history.
+
+However, the margins achieved by agricultural companies in developed countries remain highly variable, depending on fluctuating sales prices and on whether or not the States provide aid, while in other countries the situation of many farmers remains precarious. On the other hand, these recent industrial developments are leading some consumers in rich countries to question the quality of food, its safety and the consequences of modern methods on the environment.
+
+Even more worrying, **recent geopolitical events** and the **climate crisis** have shifted the main issue **from the quality** of food grown to the **_quantity available_**."
+
+## Goals
+
+- **Worldwide Wheat Production (Univariate)**: based _only_ on past datapoints, try to project futur values"
+
+- **USA Wheat Yield (Multivariate)**: using **external features** (such as **population** data & **climate change** data), try to forecast future values of the time-series."
+
+## Methods used
 
 Time-series Forecasting using different methods:
 
